@@ -289,17 +289,46 @@ function template_body_above()
 	</div>';
 
 	echo '
-	<div id="top_section_spacer"></div>
 	<div id="header"', empty($context['minmax_preferences']['upshrink']) ? '' : ' style="display: none;"', '>
 		<div class="frame">
-			<h1 class="forumtitle">
-				<a id="top" href="', $scripturl, '">', empty($context['header_logo_url_html_safe']) ? $context['forum_name'] : '<img src="' . $context['header_logo_url_html_safe'] . '" alt="' . $context['forum_name'] . '" />', '</a>
-			</h1>';
+			<div class="title_logo">
+				', empty($settings['site_slogan']) ? '<img id="logo" src="' . $settings['images_url'] . '/logo_elk.png" alt="Elkarte Community" title="Elkarte Community" />' : '<div id="siteslogan" class="floatright">' . $settings['site_slogan'] . '</div>', '
+				<h1 class="forumtitle">
+					<a id="top" href="', $scripturl, '">', empty($context['header_logo_url_html_safe']) ? $context['forum_name'] : '<img src="' . $context['header_logo_url_html_safe'] . '" alt="' . $context['forum_name'] . '" />', '</a>
+				</h1>
+			</div>
+			<div class="user_news">';
 
-	echo '
-			', empty($settings['site_slogan']) ? '<img id="logo" src="' . $settings['images_url'] . '/logo_elk.png" alt="Elkarte Community" title="Elkarte Community" />' : '<div id="siteslogan" class="floatright">' . $settings['site_slogan'] . '</div>', '';
+	// If the user is logged in, display stuff like their name, new messages, etc.
+	if ($context['user']['is_logged'])
+	{
+		echo '
+						<ul class="user_greet">
+							<li class="greeting">', $txt['hello_member_ndt'], ' <span>', $context['user']['name'], '</span></li>';
+
+		// Are there any members waiting for approval?
+		if (!empty($context['unapproved_members']))
+			echo '
+							<li>', $context['unapproved_members_text'], '</li>';
+
+		if (!empty($context['open_mod_reports']) && $context['show_open_reports'])
+			echo '
+							<li><a href="', $scripturl, '?action=moderate;area=reports">', sprintf($txt['mod_reports_waiting'], $context['open_mod_reports']), '</a></li>';
+
+		echo '
+						</ul>';
+	}
+
+	// Show a random news item? (or you could pick one from news_lines...)
+	if (!empty($settings['enable_news']) && !empty($context['random_news_line']))
+		echo '
+					<div class="news">
+						<h2>', $txt['news'], ': </h2>
+						<p>', $context['random_news_line'], '</p>
+					</div>';
 
 	echo'
+			</div>
 		</div>
 	</div>
 	<div id="wrapper">
@@ -337,38 +366,8 @@ function template_body_above()
 						</form>';
 	}
 
-	// If the user is logged in, display stuff like their name, new messages, etc.
-	if ($context['user']['is_logged'])
-	{
-		echo '
-						<ul>
-							<li class="greeting">', $txt['hello_member_ndt'], ' <span>', $context['user']['name'], '</span></li>';
-
-		// Are there any members waiting for approval?
-		if (!empty($context['unapproved_members']))
-			echo '
-							<li>', $context['unapproved_members_text'], '</li>';
-
-		if (!empty($context['open_mod_reports']) && $context['show_open_reports'])
-			echo '
-							<li><a href="', $scripturl, '?action=moderate;area=reports">', sprintf($txt['mod_reports_waiting'], $context['open_mod_reports']), '</a></li>';
-
-		echo '
-						</ul>';
-	}
-
 	echo'
-					</div>';
-	// Show a random news item? (or you could pick one from news_lines...)
-	if (!empty($settings['enable_news']) && !empty($context['random_news_line']))
-		echo '
-					<div class="news">
-						<h2>', $txt['news'], ': </h2>
-						<p>', $context['random_news_line'], '</p>
-					</div>';
-
-	echo '
-					<hr class="clear" />
+					</div>
 				</div>';
 
 	// Show the menu here, according to the menu sub template, followed by the navigation tree.

@@ -1391,7 +1391,7 @@ div.buttonlist ul>li>ul {
 /* 	background: #e2e9f3 url(../images/theme/lower_section.png) 0 0 repeat-x; */
 	border-bottom: 1px solid #bbb;
 	box-shadow: 0 1px 4px rgba(0,0,0,0.16);
-	position: fixed;
+/* 	position: fixed; */
 	width: 100%;
 	background: #fff;
 	z-index: 9999;
@@ -1457,8 +1457,29 @@ div.buttonlist ul>li>ul {
 	text-decoration: none;
 }
 /* The logo and slogan. */
-#top_section_spacer {
-	min-height: 55px;
+div#main_menu_btn {
+	display: inline;
+/* 	background: #fff url(../images/theme/lower_section.png) 0 45% repeat-x; */
+	padding: 40px 40px 0 0;
+	position: absolute;
+/* 	margin: 0; */
+}
+#main_menu_btn ul {
+	list-style-type: none;
+	display: inline;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+#main_menu_btn ul li a {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+#main_menu_btn ul li#button_logout{
+	display: block;
+	width: 100%;
+	background: url(../images/admin/admin_sprite.png) -128px 0px no-repeat transparent;
 }
 #header {
 	padding: 2px 2px 12px 2px;
@@ -1474,7 +1495,6 @@ h1.forumtitle {
 	font-family: tahoma;
 	margin: 0;
 	padding: 22px 12px 6px 12px;
-	float: left;
 	font-weight: normal;
 }
 h1.forumtitle a {
@@ -1485,13 +1505,26 @@ h1.forumtitle a {
 #siteslogan, #logo {
 	margin: 0;
 	padding: 0;
-	float: right;
 	line-height: 50px;
 	font-size: 1.8em;
 }
 /* Tweak the logo */
 #logo {
 	margin: 16px 0 0 0;
+}
+.title_logo {
+	width: 49%;
+	display: inline-block;
+}
+.user_news ul {
+	margin-bottom: 1em;
+}
+.user_news {
+	width: 49%;
+	display: inline-block;
+	vertical-align: top;
+	padding-top: 1em;
+	text-align: right;
 }
 /*
 /* The user info, news, etc.*/
