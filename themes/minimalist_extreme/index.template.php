@@ -200,6 +200,29 @@ function template_body_above()
 {
 	global $context, $settings, $scripturl, $txt, $modSettings;
 
+	// @todo: for the moment there is no better way because I want custom $txt
+	//  and ThemeStrings is loaded after template_init... :(
+	if ($context['user']['is_logged'])
+		$context['menu_buttons']['unread'] = array(
+			'title' => $txt['menu_unread'],
+			'href' => $scripturl . '?action=unreadreplies',
+			'show' => !$context['user']['is_guest'],
+			'sub_buttons' => array(
+				'unread_since_visit' => array(
+					'title' => $txt['view_unread_category'],
+					'href' => $scripturl, '?action=unread',
+				),
+				'unread_replies' => array(
+					'title' => $txt['unread_replies'],
+					'href' => $scripturl, '?action=unreadreplies',
+				),
+				'all_unread' => array(
+					'title' => $txt['unread_topics_all'],
+					'href' => $scripturl, '?action=unread;all',
+				),
+			)
+		);
+
 	// Wrapper div now echoes permanently for better layout options. h1 a is now target for "Go up" links.
 	echo '
 	<div id="top_section">
@@ -319,13 +342,9 @@ function template_body_above()
 						</ul>';
 	}
 
-	// Show a random news item? (or you could pick one from news_lines...)
-	if (!empty($settings['enable_news']) && !empty($context['random_news_line']))
-		echo '
-					<div class="news">
-						<h2>', $txt['news'], ': </h2>
-						<p>', $context['random_news_line'], '</p>
-					</div>';
+	// Show the news fader?  (assuming there are things to show...)
+	if ($settings['show_newsfader'] && !empty($context['news_lines']))
+		template_news_fader();
 
 	echo'
 			</div>
@@ -370,10 +389,17 @@ function template_body_above()
 					</div>
 				</div>';
 
+	// The upshrink image, right-floated. Yes, I know it takes some space from the menu bar.
+	// Menu bar will still accommodate ten buttons on a 1024, with theme set to 90%. That's more than enough.
+	// If anyone is terrified of losing 40px out of the menu bar, set your theme to 92% instead of 90%. :P
+	echo '
+				<div id="collapse_button">
+					<img id="upshrink" src="', $settings['images_url'], '/upshrink.png" alt="*" title="', $txt['upshrink_description'], '" style="padding: 4px 9px 3px 9px; display: none;" />
+				</div>';
+
 	// Show the menu here, according to the menu sub template, followed by the navigation tree.
 	template_menu(array('hide' => array('home', 'help', 'search', 'profile', 'logout')));
 	theme_linktree();
-
 	echo '
 			</div>
 		</div>';
@@ -451,13 +477,6 @@ function theme_linktree($force_show = false)
 	echo '
 				<div class="navigate_section">
 					<ul>';
-
-	if ($context['user']['is_logged'])
-		echo '
-						<li class="unread_links">
-							<a href="', $scripturl, '?action=unread" title="', $txt['unread_since_visit'], '">', $txt['view_unread_category'], '</a>
-							<a href="', $scripturl, '?action=unreadreplies" title="', $txt['show_unread_replies'], '">', $txt['unread_replies'], '</a>
-						</li>';
 
 	// Each tree item has a URL and name. Some may have extra_before and extra_after.
 	foreach ($context['linktree'] as $link_num => $tree)
@@ -568,14 +587,6 @@ function template_menu($options = array())
 		if ((!empty($options['only_subs']) && empty($options['no_childs'])) || (!empty($options['no_childs']) && $options['show'] == $act))
 			return;
 	}
-
-	// The upshrink image, right-floated. Yes, I know it takes some space from the menu bar.
-	// Menu bar will still accommodate ten buttons on a 1024, with theme set to 90%. That's more than enough.
-	// If anyone is terrified of losing 40px out of the menu bar, set your theme to 92% instead of 90%. :P
-	echo '
-						<li id="collapse_button">
-							<img id="upshrink" src="', $settings['images_url'], '/upshrink.png" alt="*" title="', $txt['upshrink_description'], '" style="padding: 4px 9px 3px 9px; display: none;" />
-						</li>';
 
 	echo '
 					</ul>
@@ -718,4 +729,62 @@ function template_select_boards($name, $label = '', $extra = '')
 
 	echo '
 					</select>';
+}
+
+/**
+ * This is the newsfader
+ */
+function template_news_fader()
+{
+	global $settings, $options, $txt, $context;
+
+	echo '
+	<div id="newsfader">
+		<h3 class="catbg">
+			', $txt['news'], ':
+		</h3>
+		<ul class="reset floatright" id="smfFadeScroller"', empty($options['collapse_news_fader']) ? '' : ' style="display: none;"', '>
+			<li>
+				', implode('</li><li>', $context['news_lines']), '
+			</li>
+		</ul>
+	</div>
+	<script src="', $settings['default_theme_url'], '/scripts/fader.js"></script>
+	<script><!-- // --><![CDATA[
+
+		// Create a news fader object.
+		var oNewsFader = new smc_NewsFader({
+			sFaderControlId: \'smfFadeScroller\',
+			sItemTemplate: ', JavaScriptEscape('%1$s'), ',
+			iFadeDelay: ', empty($settings['newsfader_time']) ? 5000 : $settings['newsfader_time'], '
+		});
+
+		// Create the news fader toggle.
+		var smfNewsFadeToggle = new smc_Toggle({
+			bToggleEnabled: true,
+			bCurrentlyCollapsed: ', empty($options['collapse_news_fader']) ? 'false' : 'true', ',
+			aSwappableContainers: [
+				\'smfFadeScroller\'
+			],
+			aSwapImages: [
+				{
+					sId: \'newsupshrink\',
+					srcExpanded: smf_images_url + \'/collapse.png\',
+					altExpanded: ', JavaScriptEscape($txt['hide']), ',
+					srcCollapsed: smf_images_url + \'/expand.png\',
+					altCollapsed: ', JavaScriptEscape($txt['show']), '
+				}
+			],
+			oThemeOptions: {
+				bUseThemeSettings: ', $context['user']['is_guest'] ? 'false' : 'true', ',
+				sOptionName: \'collapse_news_fader\',
+				sSessionVar: smf_session_var,
+				sSessionId: smf_session_id
+			},
+			oCookieOptions: {
+				bUseCookie: ', $context['user']['is_guest'] ? 'true' : 'false', ',
+				sCookieName: \'newsupshrink\'
+			}
+		});
+	// ]]></script>';
 }

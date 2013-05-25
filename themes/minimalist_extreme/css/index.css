@@ -968,16 +968,13 @@ table.table_padding td {
 	margin: 0;
 	padding: 0;
 	float: left;
-	width: 100%;
+	width: auto;
 }
 .dropmenu {
 	float: left;
 	width: 100%;
 	position: relative;
 	-moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
-}
-#menu_nav {
-	padding: 0 40px 0 0;
 }
 /* Level 1 button background. */
 .dropmenu li {
@@ -993,10 +990,8 @@ table.table_padding td {
 	color: #333;
 }
 /* For the upshrink button in the main menu bar. */
-#collapse_button {
-	position: absolute;
-	top: 0;
-	right: 0;
+#collapse_button { 
+	float: right;
 }
 .dropmenu li a {
 	padding: 0 0.3em;
@@ -1862,8 +1857,7 @@ ul .greeting {
 	margin: 0;
 }
 #smfFadeScroller {
-	text-align: center;
-	padding: 12px 25px;
+	text-align: right;
 	overflow: auto;
 	color: #444444; /* shouldn't be shorthand style due to a JS bug in IE! */
 }
