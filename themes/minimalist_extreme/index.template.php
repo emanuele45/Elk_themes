@@ -341,21 +341,6 @@ function template_body_above()
 		echo '
 						</ul>';
 	}
-
-	// Show the news fader?  (assuming there are things to show...)
-	if ($settings['show_newsfader'] && !empty($context['news_lines']))
-		template_news_fader();
-
-	echo'
-			</div>
-		</div>
-	</div>
-	<div id="wrapper">
-		<div id="upper_section">
-			<div id="inner_section">
-				<div id="inner_wrap"', empty($context['minmax_preferences']['upshrink']) ? '' : ' style="display: none;"', '>
-					<div class="user floatright">';
-
 	// Otherwise they're a guest - this time ask them to either register or login - lazy bums...
 	if (!empty($context['show_login_bar']))
 	{
@@ -385,6 +370,21 @@ function template_body_above()
 						</form>';
 	}
 
+
+	// Show the news fader?  (assuming there are things to show...)
+	if ($settings['show_newsfader'] && !empty($context['news_lines']))
+		template_news_fader();
+
+	echo'
+			</div>
+		</div>
+	</div>
+	<div id="wrapper">
+		<div id="upper_section">
+			<div id="inner_section">
+				<div id="inner_wrap"', empty($context['minmax_preferences']['upshrink']) ? '' : ' style="display: none;"', '>
+					<div class="user floatright">';
+
 	echo'
 					</div>
 				</div>';
@@ -398,7 +398,7 @@ function template_body_above()
 				</div>';
 
 	// Show the menu here, according to the menu sub template, followed by the navigation tree.
-	template_menu(array('hide' => array('home', 'help', 'search', 'profile', 'logout')));
+	template_menu(array('hide' => array('home', 'help', 'search', 'profile', 'login', 'logout', 'register')));
 	theme_linktree();
 	echo '
 			</div>
