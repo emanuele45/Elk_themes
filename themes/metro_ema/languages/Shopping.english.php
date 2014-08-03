@@ -1,0 +1,1 @@
+/home/emanuele/Devel/SMF/git_mods/elkarte/shopping/Shopping.english.php

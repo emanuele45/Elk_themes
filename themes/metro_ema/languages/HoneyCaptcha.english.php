@@ -1,0 +1,1 @@
+/home/emanuele/Devel/SMF/git_mods/elkarte/project-honey-captcha/HoneyCaptcha.english.php
