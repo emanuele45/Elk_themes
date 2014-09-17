@@ -15,7 +15,7 @@
  *
  */
 
- /**
+/**
  * This template is, perhaps, the most important template in the theme. It
  * contains the main template layer that displays the header and footer of
  * the forum, namely with body_above and body_below. It also contains the
@@ -44,6 +44,15 @@
  */
 function template_init()
 {
+	// Latest compiled and minified CSS
+	loadCSSFile('https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css');
+
+	// Optional theme
+	loadCSSFile('https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css');
+
+	// Latest compiled and minified JavaScript
+	loadJavascriptFile('https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js');
+
 	return array(
 		/* Use images from default theme when using templates from the default theme?
 		  if this is 'always', images from the default theme will be used.
@@ -64,7 +73,7 @@ function template_init()
 		'require_theme_strings' => false,
 
 		// This is used for the color variants.
-		'theme_variants' => array('light', 'besocial'),
+		'theme_variants' => array(),
 
 		// If the following variable is set to true, the avatar of the last poster will be displayed on the boardindex and message index.
 		'avatars_on_indexes' => true,
@@ -73,11 +82,11 @@ function template_init()
 		// moderation reports, etc. You can style each menu level indicator as desired.
 		'menu_numeric_notice' => array(
 			// Top level menu entries
-			0 => ' <span class="pm_indicator">%1$s</span>',
+			0 => ' <span class="badge">%1$s</span>',
 			// First dropdown
-			1 => ' <span>[<strong>%1$s</strong>]</span>',
+			1 => ' <span class="badge">%1$s</span>',
 			// Second level dropdown
-			2 => ' <span>[<strong>%1$s</strong>]</span>',
+			2 => ' <span class="badge">%1$s</span>',
 		),
 
 		// This slightly more complex array, instead, will deal with page indexes as frequently requested by Ant :P
@@ -105,16 +114,120 @@ function template_init()
  *                     template_{$id}_{$array[n]}
  * @param string[] $array - The array of function suffixes
  */
-function call_template_callbacks($id, $array)
+function call_template_callbacks($id, $array, $scheme = 'table', $html_id = '', $css_class = '')
 {
 	if (empty($array))
 		return;
 
-	foreach ($array as $callback)
+	switch ($scheme)
 	{
-		$func = 'template_' . $id . '_' . $callback;
-		if (function_exists($func))
-			$func();
+		case 'list':
+		{
+			foreach ($array as $callback)
+			{
+				$func = 'template_' . $id . '_' . $callback;
+				if (function_exists($func))
+					$func();
+			}
+			break;
+		}
+		case 'container':
+		{
+			$sent = false;
+
+			foreach ($array as $callback)
+			{
+				$func = 'template_' . $id . '_' . $callback;
+				if (function_exists($func))
+				{
+					if ($sent === false)
+					{
+						$sent = true;
+						echo '
+		<div class="', $css_class, '" id="', $html_id, '">';
+					}
+					$func();
+				}
+			}
+			if ($sent === true)
+				echo '
+		</div>';
+
+			break;
+		}
+		case 'tabs':
+		{
+			$active = true;
+			echo '
+		<ul class="nav nav-pills" role="tablist">';
+			foreach ($array as $callback)
+			{
+				$func = 'template_' . $id . '_' . $callback;
+				if (function_exists($func))
+				{
+					echo '
+			<li class="', $active ? 'active' : '', '"><a href="#', $id, '_', $callback, '" role="tab" data-toggle="tab">';
+					$func(true);
+					echo '</a>
+			</li>';
+					$active = false;
+				}
+			}
+			echo '
+		</ul>';
+
+			$active = true;
+			echo '
+		<div class="tab-content">';
+			foreach ($array as $callback)
+			{
+				$func = 'template_' . $id . '_' . $callback;
+				if (function_exists($func))
+				{
+					echo '
+			<div class="tab-pane fade ', $active ? 'in active' : '', '" id="', $id, '_', $callback, '">';
+					$func();
+					echo '
+			</div>';
+					$active = false;
+				}
+			}
+			echo '
+		</div>';
+			break;
+		}
+		case 'table':
+		default:
+		{
+			$count = 0;
+			foreach ($array as $callback)
+			{
+				$func = 'template_' . $id . '_' . $callback;
+				if (function_exists($func))
+					$count++;
+			}
+
+			echo '
+		<div class="row text-center">';
+
+			foreach ($array as $callback)
+			{
+				$func = 'template_' . $id . '_' . $callback;
+				if (function_exists($func))
+				{
+					echo '
+			<div class="col-md-', floor(12 / $count), '">';
+					$func();
+
+					echo '
+			</div>';
+				}
+			}
+
+			echo '
+		</div>';
+			break;
+		}
 	}
 }
 
@@ -139,13 +252,6 @@ function template_html_above()
 
 	// load in any css from addons or themes so they can overwrite if wanted
 	template_css();
-
-	// Save some database hits, if a width for multiple wrappers is set in admin.
-	if (!empty($settings['forum_width']))
-		echo '
-	<style>
-		.wrapper {width: ', $settings['forum_width'], ';}
-	</style>';
 
 	echo '
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -225,47 +331,37 @@ function template_body_above()
 
 	// Go to top/bottom of page links and skipnav link for a11y.
 	echo '
-	<a id="top" href="#skipnav">', $txt['skip_nav'], '</a>
-	<a href="#top" id="gotop" title="', $txt['go_up'], '">&#8593;</a>
-	<a href="#bot" id="gobottom" title="', $txt['go_down'], '">&#8595;</a>';
+	<a id="topnav" class="sr-only sr-only-focusable" href="#skipnav">', $txt['skip_nav'], '</a>
+	<a href="#top" class="sr-only sr-only-focusable" id="gotop" title="', $txt['go_up'], '">&#8593;</a>
+	<a href="#bot" class="sr-only sr-only-focusable" id="gobottom" title="', $txt['go_down'], '">&#8595;</a>';
 
 	// Skip nav link.
 	echo '
 	<div id="top_section">
-		<div class="wrapper">';
+		<div class="container">';
 
 	call_template_callbacks('th', $context['theme_header_callbacks']);
 
 	echo '
 		</div>
-		<div id="header" class="wrapper', !empty($settings['header_layout']) ? ($settings['header_layout'] == 1 ? ' centerheader' : ' rightheader') : '', '"', empty($context['minmax_preferences']['upshrink']) ? '' : ' style="display: none;" aria-hidden="true"', '>
+		<div id="header" class="page-header container">
 			<h1 id="forumtitle">
-				<a href="', $scripturl, '">', $context['forum_name'], '</a>
-			</h1>';
-
-	echo '
-			<div id="logobox">
-				<img id="logo" src="', $context['header_logo_url_html_safe'], '" alt="', $context['forum_name_html_safe'], '" title="', $context['forum_name_html_safe'], '" />', empty($settings['site_slogan']) ? '' : '
-				<div id="siteslogan">' . $settings['site_slogan'] . '</div>', '
-			</div>';
-
-	// Show the menu here, according to the menu sub template.
-	echo '
+				<a href="', $scripturl, '">', $context['forum_name'], '
+			<img class="text-right" id="logo" src="', $context['header_logo_url_html_safe'], '" alt="', $context['forum_name_html_safe'], '" title="', $context['forum_name_html_safe'], '" /></a>', empty($settings['site_slogan']) ? '' : '
+				<small>' . $settings['site_slogan'] . '</small>', '
+			</h1>
 		</div>';
 
-	// WAI-ARIA a11y tweaks have been applied here.
+	// Show the menu here, according to the menu sub template.
 	echo '
 		<div id="menu_nav" role="navigation">
 			', template_menu(), '
 		</div>
 	</div>
-	<div id="wrapper" class="wrapper">
-		<div id="upper_section"', empty($context['minmax_preferences']['upshrink']) ? '' : ' style="display: none;" aria-hidden="true"', '>';
+	<div id="wrapper" class="container">';
 
-	call_template_callbacks('uc', $context['upper_content_callbacks']);
-
-	echo '
-		</div>';
+	call_template_callbacks('uc', $context['upper_content_callbacks'], 'container', 
+		'upper_section', 'jumbotron');
 
 	// Show the navigation tree.
 	theme_linktree();
@@ -322,7 +418,7 @@ function template_th_search_bar()
 	global $context, $modSettings, $txt, $scripturl;
 
 	echo '
-			<form id="search_form" action="', $scripturl, '?action=search;sa=results" method="post" accept-charset="UTF-8">
+			<form class="text-right" id="search_form" action="', $scripturl, '?action=search;sa=results" method="post" accept-charset="UTF-8">
 				<label for="quicksearch">
 					<input type="text" name="search" id="quicksearch" value="" class="input_text" placeholder="', $txt['search'], '" />
 				</label>';
@@ -384,7 +480,7 @@ function template_uc_news_fader()
 	if (!empty($settings['enable_news']) && !empty($context['random_news_line']))
 	{
 		echo '
-			<div id="news">
+			<div id="news" class="container">
 				<h2>', $txt['news'], '</h2>
 				', template_news_fader(), '
 			</div>';
@@ -406,14 +502,13 @@ function template_body_below()
 	// Footer is full-width. Wrapper inside automatically matches admin width setting.
 	echo '
 	<div id="footer_section"><a id="bot"></a>
-		<div class="wrapper">
-			<ul>
-				<li class="copyright">',
+		<div class="container">
+			<p class="btn btn-default copyright">',
 					theme_copyright(), '
-				</li>',
-				!empty($context['newsfeed_urls']['rss']) ? '<li>
-					<a id="button_rss" href="' . $context['newsfeed_urls']['rss'] . '" class="rssfeeds new_win"><i class="largetext fa fa-rss"></i></a>
-				</li>' : '',
+			</p>',
+			!empty($context['newsfeed_urls']['rss']) ? '<p class="btn btn-default pull-right">
+				<a id="button_rss" href="' . $context['newsfeed_urls']['rss'] . '" class="rssfeeds new_win"><i class="largetext fa fa-rss"></i></a>
+			</p>' : '',
 			'</ul>';
 
 	// Show the load time?
@@ -461,33 +556,25 @@ function theme_linktree($default = 'linktree')
 
 	// @todo - Look at changing markup here slightly. Need to incorporate relevant aria roles.
 	echo '
-				<ul class="navigate_section">';
+				<ol class="breadcrumb">';
 
+	$tot = count($context[$default]) - 1;
 	// Each tree item has a URL and name. Some may have extra_before and extra_after.
 	// Added a linktree class to make targeting dividers easy.
-	foreach ($context[$default] as $tree)
+	foreach ($context[$default] as $pos => $tree)
 	{
 		echo '
-					<li class="linktree">';
-
-		// Dividers moved to pseudo-elements in CSS.
-		// Show something before the link?
-		if (isset($tree['extra_before']))
-			echo $tree['extra_before'];
+					<li>';
 
 		// Show the link, including a URL if it should have one.
-		echo $settings['linktree_link'] && isset($tree['url']) ? '<a href="' . $tree['url'] . '">' . $tree['name'] . '</a>' : $tree['name'];
-
-		// Show something after the link...?
-		if (isset($tree['extra_after']))
-			echo $tree['extra_after'];
+		echo isset($tree['url']) ? '<a ' . ($pos == $tot ? 'class="active" ' : '') . 'href="' . $tree['url'] . '">' . $tree['name'] . '</a>' : $tree['name'];
 
 		echo '
 					</li>';
 	}
 
 	echo '
-				</ul>';
+				</ol>';
 }
 
 /**
@@ -496,56 +583,40 @@ function theme_linktree($default = 'linktree')
 function template_menu()
 {
 	global $context, $txt;
+	$txt['toggle_navigation'] = 'Toggle navigation';
 
 	// WAI-ARIA a11y tweaks have been applied here.
 	echo '
-					<ul id="main_menu" class="wrapper" role="menubar">';
-
-	// The upshrink image, right-floated.
-	echo '
-						<li id="collapse_button" class="listlevel1">
-							<a class="linklevel1">
-								<span id="upshrink_header">&nbsp;
-									<span id="upshrink" class="collapse" style="display: none;" title="', $txt['upshrink_description'], '"></span>
-								</span>
-							</a>
-						</li>';
+	<nav class="navbar navbar-default" role="navigation">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+					<span class="sr-only">', $txt['toggle_navigation'], '</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+			</div>
+			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+				<ul class="nav navbar-nav" role="menu">';
 
 	foreach ($context['menu_buttons'] as $act => $button)
 	{
 		echo '
-						<li id="button_', $act, '" class="listlevel1', !empty($button['sub_buttons']) ? ' subsections" aria-haspopup="true"' : '"', ' role="menuitem">
-							<a ', (!empty($button['data-icon']) ? 'data-icon="' . $button['data-icon'] . '" ' : ''), 'class="linklevel1', !empty($button['active_button']) ? ' active' : '', (!empty($button['indicator']) ? ' indicator' : '' ), '" href="', $button['href'], '" ', isset($button['target']) ? 'target="' . $button['target'] . '"' : '', '><span class="button_title">', $button['title'], '</span></a>';
+						<li id="button_', $act, '" class="listlevel1 ', !empty($button['active_button']) ? ' active' : '', !empty($button['sub_buttons']) ? ' dropdown-submenu" aria-haspopup="true"' : '"', ' role="menuitem">
+							<a class="', !empty($button['sub_buttons']) ? 'dropdown-toggle" data-toggle="dropdown"' : '"', ' href="', $button['href'], '" ', isset($button['target']) ? 'target="' . $button['target'] . '"' : '', '>', $button['title'], !empty($button['sub_buttons']) ? '<span class="caret"></span>' : '', '</a>';
 
 		// Any 2nd level menus?
 		if (!empty($button['sub_buttons']))
 		{
 			echo '
-							<ul class="menulevel2" role="menu">';
+							<ul class="dropdown-menu" role="menu">';
 
 			foreach ($button['sub_buttons'] as $childact => $childbutton)
 			{
 				echo '
-								<li id="button_', $childact, '" class="listlevel2', !empty($childbutton['sub_buttons']) ? ' subsections" aria-haspopup="true"' : '"', ' role="menuitem">
-									<a class="linklevel2" href="', $childbutton['href'], '" ', isset($childbutton['target']) ? 'target="' . $childbutton['target'] . '"' : '', '>', $childbutton['title'], '</a>';
-
-				// 3rd level menus :)
-				if (!empty($childbutton['sub_buttons']))
-				{
-					echo '
-									<ul class="menulevel3" role="menu">';
-
-					foreach ($childbutton['sub_buttons'] as $grandchildact => $grandchildbutton)
-						echo '
-										<li id="button_', $grandchildact, '" class="listlevel3" role="menuitem">
-											<a class="linklevel3" href="', $grandchildbutton['href'], '" ', isset($grandchildbutton['target']) ? 'target="' . $grandchildbutton['target'] . '"' : '', '>', $grandchildbutton['title'], '</a>
-										</li>';
-
-					echo '
-									</ul>';
-				}
-
-				echo '
+								<li id="button_', $childact, '" class="listlevel2" role="menuitem">
+									<a href="', $childbutton['href'], '">', $childbutton['title'], '</a>
 								</li>';
 			}
 
@@ -558,39 +629,10 @@ function template_menu()
 	}
 
 	echo '
-					</ul>';
-
-	// Define the upper_section toggle in javascript.
-	echo '
-				<script><!-- // --><![CDATA[
-					var oMainHeaderToggle = new elk_Toggle({
-						bToggleEnabled: true,
-						bCurrentlyCollapsed: ', empty($context['minmax_preferences']['upshrink']) ? 'false' : 'true', ',
-						aSwappableContainers: [
-							\'upper_section\',\'header\'
-						],
-						aSwapClasses: [
-							{
-								sId: \'upshrink\',
-								classExpanded: \'collapse\',
-								titleExpanded: ', JavaScriptEscape($txt['upshrink_description']), ',
-								classCollapsed: \'expand\',
-								titleCollapsed: ', JavaScriptEscape($txt['upshrink_description']), '
-							}
-						],
-						oThemeOptions: {
-							bUseThemeSettings: ', $context['user']['is_guest'] ? 'false' : 'true', ',
-							sOptionName: \'minmax_preferences\',
-							sSessionId: elk_session_id,
-							sSessionVar: elk_session_var,
-							sAdditionalVars: \';minmax_key=upshrink\'
-						},
-						oCookieOptions: {
-							bUseCookie: elk_member_id == 0 ? true : false,
-							sCookieName: \'upshrink\'
-						}
-					});
-				// ]]></script>';
+					</ul>
+			</div><!-- /.navbar-collapse -->
+		</div><!-- /.container-fluid -->
+	</nav>';
 }
 
 /**
@@ -621,7 +663,7 @@ function template_button_strip($button_strip, $direction = '', $strip_options = 
 	{
 		if (!isset($value['test']) || !empty($context[$value['test']]))
 			$buttons[] = '
-								<li role="menuitem"><a' . (isset($value['id']) ? ' id="button_strip_' . $value['id'] . '"' : '') . ' class="linklevel1 button_strip_' . $key . (isset($value['active']) ? ' active' : '') . '" href="' . $value['url'] . '"' . (isset($value['custom']) ? ' ' . $value['custom'] : '') . '>' . $txt[$value['text']] . '</a></li>';
+								<a' . (isset($value['id']) ? ' id="button_strip_' . $value['id'] . '"' : '') . ' class="btn btn-default linklevel1 button_strip_' . $key . (isset($value['active']) ? ' active' : '') . '" href="' . $value['url'] . '"' . (isset($value['custom']) ? ' ' . $value['custom'] : '') . '>' . $txt[$value['text']] . '</a>';
 	}
 
 	// No buttons? No button strip either.
@@ -629,9 +671,9 @@ function template_button_strip($button_strip, $direction = '', $strip_options = 
 		return;
 
 	echo '
-							<ul role="menubar" class="buttonlist', !empty($direction) ? ' float' . $direction : '', '"', (empty($buttons) ? ' style="display: none;"' : ''), (!empty($strip_options['id']) ? ' id="' . $strip_options['id'] . '"' : ''), '>
+							<div role="menubar" class="btn-group', !empty($direction) ? ' pull-' . $direction : '', '"', (empty($buttons) ? ' style="display: none;"' : ''), (!empty($strip_options['id']) ? ' id="' . $strip_options['id'] . '"' : ''), '>
 								', implode('', $buttons), '
-							</ul>';
+							</div>';
 }
 
 /**
@@ -729,7 +771,7 @@ function template_show_error($error_id)
 	$error = isset($context[$error_id]) ? $context[$error_id] : array();
 
 	echo '
-					<div id="', $error_id, '" class="', (isset($error['type']) ? ($error['type'] === 'serious' ? 'errorbox' : 'warningbox') : 'successbox'), '" ', empty($error['errors']) ? ' style="display: none"' : '', '>';
+					<div id="', $error_id, '" class="alert ', (isset($error['type']) ? ($error['type'] === 'serious' ? 'alert-danger' : 'alert-warning') : 'alert-success'), '" ', empty($error['errors']) ? ' style="display: none"' : '', '>';
 
 	// Optional title for our results
 	if (!empty($error['title']))
@@ -808,12 +850,18 @@ function template_news_fader()
 	global $settings, $context;
 
 	echo '
-		<ul id="elkFadeScroller">
-			<li>
-				', $settings['enable_news'] == 2 ? implode('</li><li>', $context['news_lines']) : $context['random_news_line'], '
-			</li>
-		</ul>';
+		<div id="elkCarousel" class="carousel slide" data-ride="carousel">
+			<div class="carousel-inner">
+				<div class="item active">
+				', implode('</div><div class="item">', $context['news_lines']), '
+				</div>
+			</div>
 
-	addInlineJavascript('
-		$(\'#elkFadeScroller\').Elk_NewsFader();', true);
+			<a class="left carousel-control" href="#elkCarousel" role="button" data-slide="prev">
+				<span class="glyphicon glyphicon-chevron-left"></span>
+			</a>
+			<a class="right carousel-control" href="#elkCarousel" role="button" data-slide="next">
+				<span class="glyphicon glyphicon-chevron-right"></span>
+			</a>
+		</div>';
 }
